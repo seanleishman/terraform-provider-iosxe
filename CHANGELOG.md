@@ -1,3 +1,7 @@
+## Unreleased
+
+- Add `source_template` attribute to `iosxe_interface_loopback` resource and data source
+
 ## 0.16.0
 
 - Expose attributes with sensitive values also as write-only attributes

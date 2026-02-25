@@ -29,4 +29,10 @@ resource "iosxe_interface_loopback" "example" {
   ]
   arp_timeout     = 2147
   ip_igmp_version = 3
+  source_template = [
+    {
+      template_name = "TEMP1"
+      merge         = false
+    }
+  ]
 }

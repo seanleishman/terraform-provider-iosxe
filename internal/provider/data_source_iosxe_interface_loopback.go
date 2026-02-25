@@ -192,6 +192,22 @@ func (d *InterfaceLoopbackDataSource) Schema(ctx context.Context, req datasource
 				MarkdownDescription: "Outside interface for address translation",
 				Computed:            true,
 			},
+			"source_template": schema.ListNestedAttribute{
+				MarkdownDescription: "",
+				Computed:            true,
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"template_name": schema.StringAttribute{
+							MarkdownDescription: "",
+							Computed:            true,
+						},
+						"merge": schema.BoolAttribute{
+							MarkdownDescription: "merge option of binding",
+							Computed:            true,
+						},
+					},
+				},
+			},
 		},
 	}
 }

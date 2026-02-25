@@ -95,6 +95,15 @@ attributes:
     tf_name: ip_nat_outside
     example: true
     exclude_test: true
+  - yang_name: source/template/template-name
+    tf_name: source_template
+    type: List
+    attributes:
+      - yang_name: template-name
+        example: TEMP1
+        id: true
+      - yang_name: merge
+        example: false
 
 test_prerequisites:
   - path: /Cisco-IOS-XE-native:native/vrf/definition[name=VRF1]
@@ -104,3 +113,7 @@ test_prerequisites:
         value: VRF1
       - name: address-family/ipv4
         value: ""
+  - path: /Cisco-IOS-XE-native:native/template/Cisco-IOS-XE-template:template_details[template_name=TEMP1]
+    attributes:
+      - name: template_name
+        value: TEMP1

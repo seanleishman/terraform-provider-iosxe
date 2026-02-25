@@ -246,6 +246,22 @@ func (r *InterfaceLoopbackResource) Schema(ctx context.Context, req resource.Sch
 				MarkdownDescription: helpers.NewAttributeDescription("Outside interface for address translation").String,
 				Optional:            true,
 			},
+			"source_template": schema.ListNestedAttribute{
+				MarkdownDescription: helpers.NewAttributeDescription("").String,
+				Optional:            true,
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"template_name": schema.StringAttribute{
+							MarkdownDescription: helpers.NewAttributeDescription("").String,
+							Required:            true,
+						},
+						"merge": schema.BoolAttribute{
+							MarkdownDescription: helpers.NewAttributeDescription("merge option of binding").String,
+							Optional:            true,
+						},
+					},
+				},
+			},
 		},
 	}
 }

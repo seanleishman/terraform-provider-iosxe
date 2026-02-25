@@ -44,6 +44,12 @@ resource "iosxe_interface_loopback" "example" {
   ]
   arp_timeout     = 2147
   ip_igmp_version = 3
+  source_template = [
+    {
+      template_name = "TEMP1"
+      merge         = false
+    }
+  ]
 }
 ```
 
@@ -85,6 +91,7 @@ resource "iosxe_interface_loopback" "example" {
   - Range: `1280`-`9976`
 - `ipv6_nd_ra_suppress_all` (Boolean) Suppress all IPv6 RA
 - `shutdown` (Boolean) Shutdown the selected interface
+- `source_template` (Attributes List) (see [below for nested schema](#nestedatt--source_template))
 - `vrf_forwarding` (String) Configure forwarding table
 
 ### Read-Only
@@ -113,6 +120,18 @@ Required:
 Optional:
 
 - `link_local` (Boolean) Use link-local address
+
+
+<a id="nestedatt--source_template"></a>
+### Nested Schema for `source_template`
+
+Required:
+
+- `template_name` (String)
+
+Optional:
+
+- `merge` (Boolean) merge option of binding
 
 ## Import
 

@@ -56,6 +56,8 @@ func TestAccIosxeInterfaceLoopback(t *testing.T) {
 	checks = append(checks, resource.TestCheckResourceAttr("iosxe_interface_loopback.test", "ipv6_addresses.0.eui_64", "true"))
 	checks = append(checks, resource.TestCheckResourceAttr("iosxe_interface_loopback.test", "arp_timeout", "2147"))
 	checks = append(checks, resource.TestCheckResourceAttr("iosxe_interface_loopback.test", "ip_igmp_version", "3"))
+	checks = append(checks, resource.TestCheckResourceAttr("iosxe_interface_loopback.test", "source_template.0.template_name", "TEMP1"))
+	checks = append(checks, resource.TestCheckResourceAttr("iosxe_interface_loopback.test", "source_template.0.merge", "false"))
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -105,6 +107,13 @@ resource "iosxe_yang" "PreReq0" {
 	}
 }
 
+resource "iosxe_yang" "PreReq1" {
+	path = "/Cisco-IOS-XE-native:native/template/Cisco-IOS-XE-template:template_details[template_name=TEMP1]"
+	attributes = {
+		"template_name" = "TEMP1"
+	}
+}
+
 `
 
 // End of section. //template:end testPrerequisites
@@ -114,7 +123,7 @@ resource "iosxe_yang" "PreReq0" {
 func testAccIosxeInterfaceLoopbackConfig_minimum() string {
 	config := `resource "iosxe_interface_loopback" "test" {` + "\n"
 	config += `	name = 201` + "\n"
-	config += `	depends_on = [iosxe_yang.PreReq0, ]` + "\n"
+	config += `	depends_on = [iosxe_yang.PreReq0, iosxe_yang.PreReq1, ]` + "\n"
 	config += `}` + "\n"
 	return config
 }
@@ -151,7 +160,11 @@ func testAccIosxeInterfaceLoopbackConfig_all() string {
 	config += `	}]` + "\n"
 	config += `	arp_timeout = 2147` + "\n"
 	config += `	ip_igmp_version = 3` + "\n"
-	config += `	depends_on = [iosxe_yang.PreReq0, ]` + "\n"
+	config += `	source_template = [{` + "\n"
+	config += `		template_name = "TEMP1"` + "\n"
+	config += `		merge = false` + "\n"
+	config += `	}]` + "\n"
+	config += `	depends_on = [iosxe_yang.PreReq0, iosxe_yang.PreReq1, ]` + "\n"
 	config += `}` + "\n"
 	return config
 }

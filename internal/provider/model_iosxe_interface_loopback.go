@@ -70,6 +70,7 @@ type InterfaceLoopback struct {
 	IpRouterIsis                 types.String                              `tfsdk:"ip_router_isis"`
 	IpNatInside                  types.Bool                                `tfsdk:"ip_nat_inside"`
 	IpNatOutside                 types.Bool                                `tfsdk:"ip_nat_outside"`
+	SourceTemplate               []InterfaceLoopbackSourceTemplate         `tfsdk:"source_template"`
 }
 type InterfaceLoopbackIpv6LinkLocalAddresses struct {
 	Address   types.String `tfsdk:"address"`
@@ -78,6 +79,10 @@ type InterfaceLoopbackIpv6LinkLocalAddresses struct {
 type InterfaceLoopbackIpv6Addresses struct {
 	Prefix types.String `tfsdk:"prefix"`
 	Eui64  types.Bool   `tfsdk:"eui_64"`
+}
+type InterfaceLoopbackSourceTemplate struct {
+	TemplateName types.String `tfsdk:"template_name"`
+	Merge        types.Bool   `tfsdk:"merge"`
 }
 
 type InterfaceLoopbackData struct {
@@ -108,6 +113,7 @@ type InterfaceLoopbackData struct {
 	IpRouterIsis                 types.String                                  `tfsdk:"ip_router_isis"`
 	IpNatInside                  types.Bool                                    `tfsdk:"ip_nat_inside"`
 	IpNatOutside                 types.Bool                                    `tfsdk:"ip_nat_outside"`
+	SourceTemplate               []InterfaceLoopbackSourceTemplateData         `tfsdk:"source_template"`
 }
 type InterfaceLoopbackIpv6LinkLocalAddressesData struct {
 	Address   types.String `tfsdk:"address"`
@@ -116,6 +122,10 @@ type InterfaceLoopbackIpv6LinkLocalAddressesData struct {
 type InterfaceLoopbackIpv6AddressesData struct {
 	Prefix types.String `tfsdk:"prefix"`
 	Eui64  types.Bool   `tfsdk:"eui_64"`
+}
+type InterfaceLoopbackSourceTemplateData struct {
+	TemplateName types.String `tfsdk:"template_name"`
+	Merge        types.Bool   `tfsdk:"merge"`
 }
 
 // End of section. //template:end types
@@ -273,6 +283,19 @@ func (data InterfaceLoopback) toBody(ctx context.Context, config InterfaceLoopba
 			}
 		}
 	}
+	if len(data.SourceTemplate) > 0 {
+		body, _ = sjson.Set(body, helpers.LastElement(data.getPath())+"."+"source.template.template-name", []interface{}{})
+		for index, item := range data.SourceTemplate {
+			if !item.TemplateName.IsNull() && !item.TemplateName.IsUnknown() {
+				body, _ = sjson.Set(body, helpers.LastElement(data.getPath())+"."+"source.template.template-name"+"."+strconv.Itoa(index)+"."+"template-name", item.TemplateName.ValueString())
+			}
+			if !item.Merge.IsNull() && !item.Merge.IsUnknown() {
+				if item.Merge.ValueBool() {
+					body, _ = sjson.Set(body, helpers.LastElement(data.getPath())+"."+"source.template.template-name"+"."+strconv.Itoa(index)+"."+"merge", map[string]string{})
+				}
+			}
+		}
+	}
 	return body
 }
 
@@ -417,6 +440,22 @@ func (data InterfaceLoopback) toBodyXML(ctx context.Context, config InterfaceLoo
 			body = helpers.SetFromXPath(body, data.getXPath()+"/ip/Cisco-IOS-XE-nat:nat/outside", "")
 		} else {
 			body = helpers.RemoveFromXPath(body, data.getXPath()+"/ip/Cisco-IOS-XE-nat:nat/outside")
+		}
+	}
+	if len(data.SourceTemplate) > 0 {
+		for _, item := range data.SourceTemplate {
+			cBody := netconf.Body{}
+			if !item.TemplateName.IsNull() && !item.TemplateName.IsUnknown() {
+				cBody = helpers.SetFromXPath(cBody, "template-name", item.TemplateName.ValueString())
+			}
+			if !item.Merge.IsNull() && !item.Merge.IsUnknown() {
+				if item.Merge.ValueBool() {
+					cBody = helpers.SetFromXPath(cBody, "merge", "")
+				} else {
+					cBody = helpers.RemoveFromXPath(cBody, "merge")
+				}
+			}
+			body = helpers.SetRawFromXPath(body, data.getXPath()+"/source/template/template-name", cBody.Res())
 		}
 	}
 	bodyString, err := body.String()
@@ -668,6 +707,44 @@ func (data *InterfaceLoopback) updateFromBody(ctx context.Context, res gjson.Res
 	} else {
 		data.IpNatOutside = types.BoolNull()
 	}
+	for i := range data.SourceTemplate {
+		keys := [...]string{"template-name"}
+		keyValues := [...]string{data.SourceTemplate[i].TemplateName.ValueString()}
+
+		var r gjson.Result
+		res.Get(prefix + "source.template.template-name").ForEach(
+			func(_, v gjson.Result) bool {
+				found := false
+				for ik := range keys {
+					if v.Get(keys[ik]).String() == keyValues[ik] {
+						found = true
+						continue
+					}
+					found = false
+					break
+				}
+				if found {
+					r = v
+					return false
+				}
+				return true
+			},
+		)
+		if value := r.Get("template-name"); value.Exists() && !data.SourceTemplate[i].TemplateName.IsNull() {
+			data.SourceTemplate[i].TemplateName = types.StringValue(value.String())
+		} else {
+			data.SourceTemplate[i].TemplateName = types.StringNull()
+		}
+		if value := r.Get("merge"); !data.SourceTemplate[i].Merge.IsNull() {
+			if value.Exists() {
+				data.SourceTemplate[i].Merge = types.BoolValue(true)
+			} else {
+				data.SourceTemplate[i].Merge = types.BoolValue(false)
+			}
+		} else {
+			data.SourceTemplate[i].Merge = types.BoolNull()
+		}
+	}
 }
 
 // End of section. //template:end updateFromBody
@@ -908,6 +985,44 @@ func (data *InterfaceLoopback) updateFromBodyXML(ctx context.Context, res xmldot
 	} else {
 		data.IpNatOutside = types.BoolNull()
 	}
+	for i := range data.SourceTemplate {
+		keys := [...]string{"template-name"}
+		keyValues := [...]string{data.SourceTemplate[i].TemplateName.ValueString()}
+
+		var r xmldot.Result
+		helpers.GetFromXPath(res, "data"+data.getXPath()+"/source/template/template-name").ForEach(
+			func(_ int, v xmldot.Result) bool {
+				found := false
+				for ik := range keys {
+					if v.Get(keys[ik]).String() == keyValues[ik] {
+						found = true
+						continue
+					}
+					found = false
+					break
+				}
+				if found {
+					r = v
+					return false
+				}
+				return true
+			},
+		)
+		if value := helpers.GetFromXPath(r, "template-name"); value.Exists() && !data.SourceTemplate[i].TemplateName.IsNull() {
+			data.SourceTemplate[i].TemplateName = types.StringValue(value.String())
+		} else {
+			data.SourceTemplate[i].TemplateName = types.StringNull()
+		}
+		if value := helpers.GetFromXPath(r, "merge"); !data.SourceTemplate[i].Merge.IsNull() {
+			if value.Exists() {
+				data.SourceTemplate[i].Merge = types.BoolValue(true)
+			} else {
+				data.SourceTemplate[i].Merge = types.BoolValue(false)
+			}
+		} else {
+			data.SourceTemplate[i].Merge = types.BoolNull()
+		}
+	}
 }
 
 // End of section. //template:end updateFromBodyXML
@@ -1040,6 +1155,22 @@ func (data *InterfaceLoopback) fromBody(ctx context.Context, res gjson.Result) {
 		data.IpNatOutside = types.BoolValue(true)
 	} else {
 		data.IpNatOutside = types.BoolValue(false)
+	}
+	if value := res.Get(prefix + "source.template.template-name"); value.Exists() {
+		data.SourceTemplate = make([]InterfaceLoopbackSourceTemplate, 0)
+		value.ForEach(func(k, v gjson.Result) bool {
+			item := InterfaceLoopbackSourceTemplate{}
+			if cValue := v.Get("template-name"); cValue.Exists() {
+				item.TemplateName = types.StringValue(cValue.String())
+			}
+			if cValue := v.Get("merge"); cValue.Exists() {
+				item.Merge = types.BoolValue(true)
+			} else {
+				item.Merge = types.BoolValue(false)
+			}
+			data.SourceTemplate = append(data.SourceTemplate, item)
+			return true
+		})
 	}
 }
 
@@ -1174,6 +1305,22 @@ func (data *InterfaceLoopbackData) fromBody(ctx context.Context, res gjson.Resul
 	} else {
 		data.IpNatOutside = types.BoolValue(false)
 	}
+	if value := res.Get(prefix + "source.template.template-name"); value.Exists() {
+		data.SourceTemplate = make([]InterfaceLoopbackSourceTemplateData, 0)
+		value.ForEach(func(k, v gjson.Result) bool {
+			item := InterfaceLoopbackSourceTemplateData{}
+			if cValue := v.Get("template-name"); cValue.Exists() {
+				item.TemplateName = types.StringValue(cValue.String())
+			}
+			if cValue := v.Get("merge"); cValue.Exists() {
+				item.Merge = types.BoolValue(true)
+			} else {
+				item.Merge = types.BoolValue(false)
+			}
+			data.SourceTemplate = append(data.SourceTemplate, item)
+			return true
+		})
+	}
 }
 
 // End of section. //template:end fromBodyData
@@ -1302,6 +1449,22 @@ func (data *InterfaceLoopback) fromBodyXML(ctx context.Context, res xmldot.Resul
 		data.IpNatOutside = types.BoolValue(true)
 	} else {
 		data.IpNatOutside = types.BoolValue(false)
+	}
+	if value := helpers.GetFromXPath(res, "data"+data.getXPath()+"/source/template/template-name"); value.Exists() {
+		data.SourceTemplate = make([]InterfaceLoopbackSourceTemplate, 0)
+		value.ForEach(func(_ int, v xmldot.Result) bool {
+			item := InterfaceLoopbackSourceTemplate{}
+			if cValue := helpers.GetFromXPath(v, "template-name"); cValue.Exists() {
+				item.TemplateName = types.StringValue(cValue.String())
+			}
+			if cValue := helpers.GetFromXPath(v, "merge"); cValue.Exists() {
+				item.Merge = types.BoolValue(true)
+			} else {
+				item.Merge = types.BoolValue(false)
+			}
+			data.SourceTemplate = append(data.SourceTemplate, item)
+			return true
+		})
 	}
 }
 
@@ -1432,6 +1595,22 @@ func (data *InterfaceLoopbackData) fromBodyXML(ctx context.Context, res xmldot.R
 	} else {
 		data.IpNatOutside = types.BoolValue(false)
 	}
+	if value := helpers.GetFromXPath(res, "data"+data.getXPath()+"/source/template/template-name"); value.Exists() {
+		data.SourceTemplate = make([]InterfaceLoopbackSourceTemplateData, 0)
+		value.ForEach(func(_ int, v xmldot.Result) bool {
+			item := InterfaceLoopbackSourceTemplateData{}
+			if cValue := helpers.GetFromXPath(v, "template-name"); cValue.Exists() {
+				item.TemplateName = types.StringValue(cValue.String())
+			}
+			if cValue := helpers.GetFromXPath(v, "merge"); cValue.Exists() {
+				item.Merge = types.BoolValue(true)
+			} else {
+				item.Merge = types.BoolValue(false)
+			}
+			data.SourceTemplate = append(data.SourceTemplate, item)
+			return true
+		})
+	}
 }
 
 // End of section. //template:end fromBodyDataXML
@@ -1440,6 +1619,34 @@ func (data *InterfaceLoopbackData) fromBodyXML(ctx context.Context, res xmldot.R
 
 func (data *InterfaceLoopback) getDeletedItems(ctx context.Context, state InterfaceLoopback) []string {
 	deletedItems := make([]string, 0)
+	for i := range state.SourceTemplate {
+		stateKeyValues := [...]string{state.SourceTemplate[i].TemplateName.ValueString()}
+
+		emptyKeys := true
+		if !reflect.ValueOf(state.SourceTemplate[i].TemplateName.ValueString()).IsZero() {
+			emptyKeys = false
+		}
+		if emptyKeys {
+			continue
+		}
+
+		found := false
+		for j := range data.SourceTemplate {
+			found = true
+			if state.SourceTemplate[i].TemplateName.ValueString() != data.SourceTemplate[j].TemplateName.ValueString() {
+				found = false
+			}
+			if found {
+				if !state.SourceTemplate[i].Merge.IsNull() && data.SourceTemplate[j].Merge.IsNull() {
+					deletedItems = append(deletedItems, fmt.Sprintf("%v/source/template/template-name=%v/merge", state.getPath(), strings.Join(stateKeyValues[:], ",")))
+				}
+				break
+			}
+		}
+		if !found {
+			deletedItems = append(deletedItems, fmt.Sprintf("%v/source/template/template-name=%v", state.getPath(), strings.Join(stateKeyValues[:], ",")))
+		}
+	}
 	if !state.IpNatOutside.IsNull() && data.IpNatOutside.IsNull() {
 		deletedItems = append(deletedItems, fmt.Sprintf("%v/ip/Cisco-IOS-XE-nat:nat/outside", state.getPath()))
 	}
@@ -1572,6 +1779,39 @@ func (data *InterfaceLoopback) getDeletedItems(ctx context.Context, state Interf
 
 func (data *InterfaceLoopback) addDeletedItemsXML(ctx context.Context, state InterfaceLoopback, body string) string {
 	b := netconf.NewBody(body)
+	for i := range state.SourceTemplate {
+		stateKeys := [...]string{"template-name"}
+		stateKeyValues := [...]string{state.SourceTemplate[i].TemplateName.ValueString()}
+		predicates := ""
+		for i := range stateKeys {
+			predicates += fmt.Sprintf("[%s='%s']", stateKeys[i], stateKeyValues[i])
+		}
+
+		emptyKeys := true
+		if !reflect.ValueOf(state.SourceTemplate[i].TemplateName.ValueString()).IsZero() {
+			emptyKeys = false
+		}
+		if emptyKeys {
+			continue
+		}
+
+		found := false
+		for j := range data.SourceTemplate {
+			found = true
+			if state.SourceTemplate[i].TemplateName.ValueString() != data.SourceTemplate[j].TemplateName.ValueString() {
+				found = false
+			}
+			if found {
+				if !state.SourceTemplate[i].Merge.IsNull() && data.SourceTemplate[j].Merge.IsNull() {
+					b = helpers.RemoveFromXPath(b, fmt.Sprintf(state.getXPath()+"/source/template/template-name%v/merge", predicates))
+				}
+				break
+			}
+		}
+		if !found {
+			b = helpers.RemoveFromXPath(b, fmt.Sprintf(state.getXPath()+"/source/template/template-name%v", predicates))
+		}
+	}
 	if !state.IpNatOutside.IsNull() && data.IpNatOutside.IsNull() {
 		b = helpers.RemoveFromXPath(b, state.getXPath()+"/ip/Cisco-IOS-XE-nat:nat/outside")
 	}
@@ -1715,6 +1955,13 @@ func (data *InterfaceLoopback) addDeletedItemsXML(ctx context.Context, state Int
 
 func (data *InterfaceLoopback) getEmptyLeafsDelete(ctx context.Context) []string {
 	emptyLeafsDelete := make([]string, 0)
+
+	for i := range data.SourceTemplate {
+		keyValues := [...]string{data.SourceTemplate[i].TemplateName.ValueString()}
+		if !data.SourceTemplate[i].Merge.IsNull() && !data.SourceTemplate[i].Merge.ValueBool() {
+			emptyLeafsDelete = append(emptyLeafsDelete, fmt.Sprintf("%v/source/template/template-name=%v/merge", data.getPath(), strings.Join(keyValues[:], ",")))
+		}
+	}
 	if !data.IpNatOutside.IsNull() && !data.IpNatOutside.ValueBool() {
 		emptyLeafsDelete = append(emptyLeafsDelete, fmt.Sprintf("%v/ip/Cisco-IOS-XE-nat:nat/outside", data.getPath()))
 	}
@@ -1766,6 +2013,11 @@ func (data *InterfaceLoopback) getEmptyLeafsDelete(ctx context.Context) []string
 
 func (data *InterfaceLoopback) getDeletePaths(ctx context.Context) []string {
 	var deletePaths []string
+	for i := range data.SourceTemplate {
+		keyValues := [...]string{data.SourceTemplate[i].TemplateName.ValueString()}
+
+		deletePaths = append(deletePaths, fmt.Sprintf("%v/source/template/template-name=%v", data.getPath(), strings.Join(keyValues[:], ",")))
+	}
 	if !data.IpNatOutside.IsNull() {
 		deletePaths = append(deletePaths, fmt.Sprintf("%v/ip/Cisco-IOS-XE-nat:nat/outside", data.getPath()))
 	}
@@ -1852,6 +2104,16 @@ func (data *InterfaceLoopback) getDeletePaths(ctx context.Context) []string {
 
 func (data *InterfaceLoopback) addDeletePathsXML(ctx context.Context, body string) string {
 	b := netconf.NewBody(body)
+	for i := range data.SourceTemplate {
+		keys := [...]string{"template-name"}
+		keyValues := [...]string{data.SourceTemplate[i].TemplateName.ValueString()}
+		predicates := ""
+		for i := range keys {
+			predicates += fmt.Sprintf("[%s='%s']", keys[i], keyValues[i])
+		}
+
+		b = helpers.RemoveFromXPath(b, fmt.Sprintf(data.getXPath()+"/source/template/template-name%v", predicates))
+	}
 	if !data.IpNatOutside.IsNull() {
 		b = helpers.RemoveFromXPath(b, data.getXPath()+"/ip/Cisco-IOS-XE-nat:nat/outside")
 	}

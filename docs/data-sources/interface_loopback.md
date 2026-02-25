@@ -55,6 +55,7 @@ data "iosxe_interface_loopback" "example" {
 - `ipv6_mtu` (Number) Set IPv6 Maximum Transmission Unit
 - `ipv6_nd_ra_suppress_all` (Boolean) Suppress all IPv6 RA
 - `shutdown` (Boolean) Shutdown the selected interface
+- `source_template` (Attributes List) (see [below for nested schema](#nestedatt--source_template))
 - `vrf_forwarding` (String) Configure forwarding table
 
 <a id="nestedatt--ipv6_addresses"></a>
@@ -73,3 +74,12 @@ Read-Only:
 
 - `address` (String)
 - `link_local` (Boolean) Use link-local address
+
+
+<a id="nestedatt--source_template"></a>
+### Nested Schema for `source_template`
+
+Read-Only:
+
+- `merge` (Boolean) merge option of binding
+- `template_name` (String)
